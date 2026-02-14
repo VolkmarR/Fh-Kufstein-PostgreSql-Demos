@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:18
+    ports:
+      - "6543:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./.docker/pgdata:/var/lib/postgresql
