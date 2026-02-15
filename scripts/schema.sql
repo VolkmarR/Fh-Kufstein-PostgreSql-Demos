@@ -17,15 +17,15 @@ WHERE val IS NOT NULL
   AND val IS JSON;
 
 -- 3. Cleanup and Recreate Relational Tables
-DROP TABLE IF EXISTS movie_cast;
-DROP TABLE IF EXISTS movie_genres;
+DROP TABLE IF EXISTS movie_cast CASCADE;
+DROP TABLE IF EXISTS movie_genres CASCADE;
 DROP TABLE IF EXISTS movie_tags CASCADE;
 DROP TABLE IF EXISTS movies CASCADE;
 DROP VIEW IF EXISTS movie_search CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS movies_full_fts CASCADE;
 
 CREATE TABLE movies (
-    id TEXT PRIMARY KEY,
+    id INT PRIMARY KEY,
     title TEXT NOT NULL,
     overview TEXT,
     director TEXT,
@@ -45,19 +45,19 @@ CREATE TABLE movies (
 CREATE INDEX idx_movies_fts ON movies USING GIN (fts);
 
 CREATE TABLE movie_genres (
-    movie_id TEXT REFERENCES movies(id),
+    movie_id INT REFERENCES movies(id),
     genre TEXT NOT NULL,
     PRIMARY KEY (movie_id, genre)
 );
 
 CREATE TABLE movie_tags (
-    movie_id TEXT REFERENCES movies(id),
+    movie_id INT REFERENCES movies(id),
     tag TEXT NOT NULL,
     PRIMARY KEY (movie_id, tag)
 );
 
 CREATE TABLE movie_cast (
-    movie_id TEXT REFERENCES movies(id),
+    movie_id INT REFERENCES movies(id),
     actor TEXT NOT NULL,
     character TEXT NOT NULL,
     PRIMARY KEY (movie_id, actor, character)
@@ -66,7 +66,7 @@ CREATE TABLE movie_cast (
 -- 4. Transform and Insert Data
 INSERT INTO movies (id, title, overview, director, year, votes, rating, popularity, budget, url)
 SELECT 
-    data->>'id',
+    (data->>'id')::INTEGER,
     data->>'title',
     data->>'overview',
     data->>'director',
@@ -80,21 +80,21 @@ FROM movie_json;
 
 INSERT INTO movie_genres (movie_id, genre)
 SELECT 
-    data->>'id',
+    (data->>'id')::INTEGER,
     genre
 FROM movie_json,
      jsonb_array_elements_text(data->'genres') AS genre;
 
 INSERT INTO movie_tags (movie_id, tag)
 SELECT 
-    data->>'id',
+    (data->>'id')::INTEGER,
     tag
 FROM movie_json,
      jsonb_array_elements_text(data->'tags') AS tag;
 
 INSERT INTO movie_cast (movie_id, actor, character)
 SELECT 
-    data->>'id',
+    (data->>'id')::INTEGER,
     actor,
     COALESCE(data->'characters'->>(ordinality::int-1), 'Unknown')
 FROM movie_json,
