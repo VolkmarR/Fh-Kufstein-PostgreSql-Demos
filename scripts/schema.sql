@@ -32,8 +32,15 @@ CREATE TABLE movies (
     rating NUMERIC,
     popularity NUMERIC,
     budget BIGINT,
-    url TEXT
+    url TEXT,
+    fts tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(director, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(overview, '')), 'C')
+    ) STORED
 );
+
+CREATE INDEX idx_movies_fts ON movies USING GIN (fts);
 
 CREATE TABLE movie_genres (
     movie_id TEXT REFERENCES movies(id),
@@ -90,3 +97,14 @@ SELECT
     COALESCE(data->'characters'->>(ordinality::int-1), 'Unknown')
 FROM movie_json,
      jsonb_array_elements_text(data->'actors') WITH ORDINALITY AS actor;
+
+-- 5. Search View
+CREATE OR REPLACE VIEW movie_search AS
+SELECT 
+    id,
+    title,
+    director,
+    year,
+    rating,
+    fts AS query
+FROM movies;
