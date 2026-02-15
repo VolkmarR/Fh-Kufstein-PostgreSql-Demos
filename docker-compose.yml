@@ -7,3 +7,4 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - ./.docker/pgdata:/var/lib/postgresql
+      - ./import-data:/import-data
