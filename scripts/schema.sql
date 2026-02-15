@@ -19,8 +19,10 @@ WHERE val IS NOT NULL
 -- 3. Cleanup and Recreate Relational Tables
 DROP TABLE IF EXISTS movie_cast;
 DROP TABLE IF EXISTS movie_genres;
-DROP TABLE IF EXISTS movie_tags;
-DROP TABLE IF EXISTS movies;
+DROP TABLE IF EXISTS movie_tags CASCADE;
+DROP TABLE IF EXISTS movies CASCADE;
+DROP VIEW IF EXISTS movie_search CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS movies_full_fts CASCADE;
 
 CREATE TABLE movies (
     id TEXT PRIMARY KEY,
@@ -98,13 +100,19 @@ SELECT
 FROM movie_json,
      jsonb_array_elements_text(data->'actors') WITH ORDINALITY AS actor;
 
--- 5. Search View
-CREATE OR REPLACE VIEW movie_search AS
+-- 5. Relational Search Materialized View
+-- Aggregates genres, tags, and cast for deep searching across relations.
+CREATE MATERIALIZED VIEW movies_full_fts AS
 SELECT 
-    id,
-    title,
-    director,
-    year,
-    rating,
-    fts AS query
-FROM movies;
+    m.id,
+    m.fts ||
+    setweight(to_tsvector('english', coalesce(string_agg(DISTINCT g.genre, ' '), '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(string_agg(DISTINCT t.tag, ' '), '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(string_agg(DISTINCT c.actor, ' '), '')), 'C') as fts
+FROM movies m
+LEFT JOIN movie_genres g ON m.id = g.movie_id
+LEFT JOIN movie_tags t ON m.id = t.movie_id
+LEFT JOIN movie_cast c ON m.id = c.movie_id
+GROUP BY m.id;
+
+CREATE INDEX idx_movies_full_fts ON movies_full_fts USING GIN (fts);
