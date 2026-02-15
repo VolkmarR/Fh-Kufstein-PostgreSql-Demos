@@ -58,6 +58,9 @@ These examples illustrate PostgreSQL's robust search capabilities:
 - **`01-search-examples.sql`**: Covers core FTS concepts including basic search (`@@` operator), weighted ranking (Title vs. Overview), and user-friendly web-style searching.
 - **`02-advanced-search.sql`**: Demonstrates deep search capabilities using materialized views to aggregate and search across multiple related tables (actors, genres, tags).
 
+### Transaction Isolation (`/Transactions`)
+- **`transaction-isolation.sql`**: Contains examples of common transaction phenomena (Non-Repeatable Reads, Phantom Reads) and demonstrates how PostgreSQL's isolation levels (Read Committed vs. Repeatable Read) can be used to manage concurrency.
+
 ---
 
 ## Data Model
